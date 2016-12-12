@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html ng-app="myApp">
+<html lang="en">
+<head>
+    <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="bootstrap-3.3.7-dist/css/bootstrap.min.css">
+    <script data-require="angular.js@1.3.0" data-semver="1.3.0" src="https://code.angularjs.org/1.3.0/angular.js"></script>
+    <script src="http://code.jquery.com/jquery.min.js"></script>
+    <script src="ui-bootstrap-tpls-2.2.0.min.js"></script>
+    <script src="angular.min.js"></script>
+    <script src="bootstrap-3.3.7-dist/js/bootstrap.min.js"></script>
+    <script src="dirPagination.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.8/angular.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.8/angular-animate.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.8/angular-sanitize.js"></script>
+    <script src="https://angular-ui.github.io/bootstrap/ui-bootstrap-tpls-2.2.0.js"></script>
+
+    <style>
+    </style>
+
+    <script type="text/javascript">
+        $(document).ready(function(){
+            $("#goback_les").click(function(){
+                jQuery("#carousel_detail").carousel(0);
+            });
+            $("#goback_bill").click(function(){
+                jQuery("#carousel_bill").carousel(0);
+            });
+        });
+
+
+
+        var myApp = angular.module('myApp', ['angularUtils.directives.dirPagination']);
+
+        function LegislatorsController($scope, $http) {
+            $scope.currentPage = 1;
+            $scope.pageSize = 10;
+            $scope.local_legis = JSON.parse(localStorage.getItem('legislator'));
+            if ($scope.local_legis == null) {
+                $scope.local_legis = [];
+                localStorage.setItem('legislator', JSON.stringify($scope.local_legis));
+            }
+            $scope.local_bill = JSON.parse(localStorage.getItem('bill'));
+            if ($scope.local_bill == null) {
+                $scope.local_bill = [];
+                localStorage.setItem('bill', JSON.stringify($scope.local_bill));
+            }
+            $scope.local_comm = JSON.parse(localStorage.getItem('comm'));
+            if ($scope.local_comm == null) {
+                $scope.local_comm = [];
+                localStorage.setItem('comm', JSON.stringify($scope.local_comm));
+            }
+
+
+            $http({
+                method: 'GET',
+                url: 'http://app1-simon-env.us-west-1.elasticbeanstalk.com/index.php?operation=legislators'
+            }).then(function successCallback(response) {
+                console.log(response);
+                temp_list = response.data.results;
+                $scope.list = temp_list;
+            }, function errorCallback(response) {
+                console.log("BBB");
+            });
+
+
+            $http({
+                method: 'GET',
+                url: 'http://app1-simon-env.us-west-1.elasticbeanstalk.com/index.php?operation=bills&active=true'
+            }).then(function successCallback(response) {
+                console.log(response);
+                temp_bills_active_list = response.data.results;
+                $scope.bills_active_list = temp_bills_active_list;
+            }, function errorCallback(response) {
+                console.log("BBB");
+            });
+
+            $http({
+                method: 'GET',
+                url: 'http://app1-simon-env.us-west-1.elasticbeanstalk.com/index.php?operation=bills&active=false'
+            }).then(function successCallback(response) {
+                console.log(response);
+                temp_bills_unactive_list = response.data.results;
+                $scope.bills_unactive_list = temp_bills_unactive_list;
+            }, function errorCallback(response) {
+                console.log("BBB");
+            });
+
+            $scope.pageChangeHandler = function(num) {
+                console.log('meals page changed to ' + num);
+            };
+
+            $scope.get_detail_legislator = function(ele) {
+                jQuery("#carousel_detail").carousel(1);
+                $scope.legislator_detail = ele;
+                console.log(ele);
+                sponsor_id = ele["bioguide_id"];
+                $scope.bills_list = [];
+                $scope.committees_list = [];
+                var current = new Date();
+                var start = new Date(ele.term_start);
+                var end = new Date(ele.term_end);
+
+                $scope.percent = Math.round((current - start) / (end - start) * 100);
+                console.log($scope.dynamicx);
+
+                $http({
+                    method: 'GET',
+                    url: 'http://app1-simon-env.us-west-1.elasticbeanstalk.com/index.php?operation=committees'
+                }).then(function successCallback(response) {
+                    temp_committees_list = response.data.results;
+                    for (i=0; i<temp_committees_list.length; i++) {
+                        if (temp_committees_list[i].chamber == ele.chamber)
+                            $scope.committees_list.push(temp_committees_list[i]);
+                        if ($scope.committees_list.length == 5)
+                            break;
+                    }
+                    console.log($scope.committees_list)
+                }, function errorCallback(response) {
+                    console.log("BBB");
+                });
+
+                $http({
+                    method: 'GET',
+                    url: 'http://app1-simon-env.us-west-1.elasticbeanstalk.com/index.php?operation=bills&sponsor_id=' + sponsor_id
+                }).then(function successCallback(response) {
+                    temp_bills_list = response.data.results;
+                    for (i=0; i<5; i++) {
+                        $scope.bills_list.push(temp_bills_list[i]);
+                    }
+                    console.log($scope.bills_list)
+                }, function errorCallback(response) {
+                    console.log("BBB");
+                });
+
+            };
+
+            $scope.get_detail_bill = function(ele) {
+                jQuery("#carousel_bill").carousel(1);
+                $scope.bill_detail = ele;
+                console.log(ele);
+            };
+
+            $scope.comm_house_list = [];
+            $scope.comm_senate_list = [];
+            $scope.comm_joint_list = [];
+
+            $http({
+                method: 'GET',
+                url: 'http://app1-simon-env.us-west-1.elasticbeanstalk.com/index.php?operation=committees'
+            }).then(function successCallback(response) {
+                console.log(response);
+                temp_comm_list = response.data.results;
+                for (i=0; i<temp_comm_list.length; i++) {
+                    if (temp_comm_list[i].chamber == "house")
+                        $scope.comm_house_list.push(temp_comm_list[i]);
+                    if (temp_comm_list[i].chamber == "senate")
+                        $scope.comm_senate_list.push(temp_comm_list[i]);
+                    if (temp_comm_list[i].chamber == "joint")
+                        $scope.comm_joint_list.push(temp_comm_list[i]);
+                }
+                console.log($scope.comm_house_list)
+            }, function errorCallback(response) {
+                console.log("BBB");
+            });
+
+            $scope.isLegisFavorite = function(ele) {
+                if ($scope.local_legis == null || $scope.local_legis.length == 0)
+                    return false;
+                for(i=0;i<$scope.local_legis.length;i++) {
+                    if ($scope.local_legis[i]["bioguide_id"] == ele["bioguide_id"])
+                        return true;
+                }
+                return false;
+            };
+
+            $scope.favorite = function(ele) {
+                if ($scope.isLegisFavorite(ele) == true) {
+                    $scope.remove_legis(ele);
+                }
+                else {
+                    console.log(ele);
+//                $scope.local_legis = JSON.parse(localStorage.getItem('legislator'));
+                    if ($scope.local_legis == null)
+                        $scope.local_legis = [];
+                    $scope.local_legis.push(ele);
+                    console.log($scope.local_legis);
+                    localStorage.setItem('legislator', JSON.stringify($scope.local_legis));
+                }
+
+            };
+
+            $scope.remove_legis = function(ele) {
+                for (i=0;i<$scope.local_legis.length; i++) {
+                    if ($scope.local_legis[i]["bioguide_id"] == ele["bioguide_id"]) {
+                        $scope.local_legis.splice(i,1);
+                    }
+                }
+                localStorage.setItem('legislator', JSON.stringify($scope.local_legis));
+            };
+
+
+            $scope.isBillFavorite = function(ele) {
+                if ($scope.local_bill == null || $scope.local_bill.length == 0)
+                    return false;
+                for(i=0;i<$scope.local_bill.length;i++) {
+                    if ($scope.local_bill[i]["bill_id"] == ele["bill_id"])
+                        return true;
+                }
+                return false;
+            };
+
+            $scope.favorite_bill = function(ele) {
+                if ($scope.isBillFavorite(ele) == true) {
+                    $scope.remove_bill(ele);
+                }
+                else {
+                    console.log(ele);
+//                $scope.local_legis = JSON.parse(localStorage.getItem('legislator'));
+                    if ($scope.local_bill == null)
+                        $scope.local_bill = [];
+                    $scope.local_bill.push(ele);
+                    console.log($scope.local_bill);
+                    localStorage.setItem('bill', JSON.stringify($scope.local_bill));
+                }
+
+            };
+
+            $scope.remove_bill = function(ele) {
+                for (i=0;i<$scope.local_bill.length; i++) {
+                    if ($scope.local_bill[i]["bill_id"] == ele["bill_id"]) {
+                        $scope.local_bill.splice(i,1);
+                    }
+                }
+                localStorage.setItem('bill', JSON.stringify($scope.local_bill));
+            };
+
+            $scope.isCommFavorite = function(ele) {
+                if ($scope.local_comm == null || $scope.local_comm.length == 0)
+                    return false;
+                for(i=0;i<$scope.local_comm.length;i++) {
+                    if ($scope.local_comm[i]["committee_id"] == ele["committee_id"])
+                        return true;
+                }
+                return false;
+            };
+
+            $scope.favorite_comm = function(ele) {
+                if ($scope.isCommFavorite(ele) == true) {
+                    $scope.remove_comm(ele);
+                }
+                else {
+                    console.log(ele);
+//                $scope.local_legis = JSON.parse(localStorage.getItem('legislator'));
+                    if ($scope.local_comm == null)
+                        $scope.local_comm = [];
+                    $scope.local_comm.push(ele);
+                    console.log($scope.local_comm);
+                    localStorage.setItem('comm', JSON.stringify($scope.local_comm));
+                }
+
+            };
+
+            $scope.remove_comm = function(ele) {
+                for (i=0;i<$scope.local_comm.length; i++) {
+                    if ($scope.local_comm[i]["committee_id"] == ele["committee_id"]) {
+                        $scope.local_comm.splice(i,1);
+                    }
+                }
+                localStorage.setItem('comm', JSON.stringify($scope.local_comm));
+            };
+
+
+        }
+
+        function LegislatorsOtherController($scope) {
+            $scope.pageChangeHandler = function(num) {
+                console.log('going to page ' + num);
+            };
+        }
+
+        function BillsController($scope, $http) {
+            $scope.currentPage = 1;
+            $scope.pageSize = 10;
+
+            $http({
+                method: 'GET',
+                url: 'http://app1-simon-env.us-west-1.elasticbeanstalk.com/index.php?operation=bills&active=true'
+            }).then(function successCallback(response) {
+                console.log(response);
+                temp_bills_active_list = response.data.results;
+                $scope.bills_active_list = temp_bills_active_list;
+            }, function errorCallback(response) {
+                console.log("BBB");
+            });
+
+            $http({
+                method: 'GET',
+                url: 'http://app1-simon-env.us-west-1.elasticbeanstalk.com/index.php?operation=bills&active=false'
+            }).then(function successCallback(response) {
+                console.log(response);
+                temp_bills_unactive_list = response.data.results;
+                $scope.bills_unactive_list = temp_bills_unactive_list;
+            }, function errorCallback(response) {
+                console.log("BBB");
+            });
+
+            $scope.pageChangeHandler = function(num) {
+                console.log('meals page changed to ' + num);
+            };
+
+            $scope.get_detail_bill = function(ele) {
+                jQuery("#carousel_bill").carousel(1);
+                $scope.bill_detail = ele;
+                console.log(ele);
+            };
+        }
+
+        function CommitteesController($scope, $http) {
+            $scope.currentPage = 1;
+            $scope.pageSize = 10;
+            $scope.comm_house_list = [];
+            $scope.comm_senate_list = [];
+            $scope.comm_joint_list = [];
+
+            $http({
+                method: 'GET',
+                url: 'http://app1-simon-env.us-west-1.elasticbeanstalk.com/index.php?operation=committees'
+            }).then(function successCallback(response) {
+                console.log(response);
+                temp_comm_list = response.data.results;
+                for (i=0; i<temp_comm_list.length; i++) {
+                    if (temp_comm_list[i].chamber == "house")
+                        $scope.comm_house_list.push(temp_comm_list[i]);
+                    if (temp_comm_list[i].chamber == "senate")
+                        $scope.comm_senate_list.push(temp_comm_list[i]);
+                    if (temp_comm_list[i].chamber == "joint")
+                        $scope.comm_joint_list.push(temp_comm_list[i]);
+                }
+                console.log($scope.comm_house_list)
+            }, function errorCallback(response) {
+                console.log("BBB");
+            });
+
+            $scope.pageChangeHandler = function(num) {
+                console.log('meals page changed to ' + num);
+            };
+
+        }
+
+//        function LocalLegisController($scope, $http) {
+//            $scope.currentPage = 1;
+//            $scope.pageSize = 10;
+//
+//            $scope.legis = JSON.parse(localStorage.getItem('legislator'));
+//            console.log($scope.legis);
+//
+//            $scope.pageChangeHandler = function(num) {
+//                console.log('meals page changed to ' + num);
+//            };
+//
+//            $scope.remove_legis = function(ele) {
+//                for (i=0;i<$scope.legis.length; i++) {
+//                    if ($scope.legis[i]["bioguide_id"] == ele["bioguide_id"]) {
+//                        $scope.legis.splice(i,1);
+//                    }
+//                }
+//                localStorage.setItem('legislator', JSON.stringify($scope.local_legis));
+//            }
+//
+//        }
+
+
+        function main() {
+//            myApp.controller('LocalLegisController', LocalLegisController);
+//            myApp.controller('CommitteesController', CommitteesController);
+//            myApp.controller('BillsController', BillsController);
+            myApp.controller('LegislatorsController', LegislatorsController);
+            myApp.controller('LegislatorsOtherController', LegislatorsOtherController);
+
+        }
+
+
+
+    </script>
+</head>
+<body>
+
+
+<div id="simon_header">
+    <div class="row">
+        <div class="col-md-12">
+            <div style='float:left;' class="glyphicon glyphicon-menu-hamburger" data-toggle="collapse" data-target="#bar"></div>
+            <div style="padding-left: 50px;">
+                <a style='float:left' href="http://sunlightfoundation.com/" target="_blank"><img src="image/logo.png"></a>
+                <h4>Congress API</h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="body" ng-controller="LegislatorsController">
+    <ul class="nav nav-stacked navbar-inverse nav-tabs col-md-2 collapse in width" id="bar">
+        <li class="active"><a data-toggle="tab" href="#legislators"><span class="glyphicon glyphicon-user"></span><span class="hidden-xs">&nbspLegislators</span></a></li>
+        <li><a data-toggle="tab" href="#bills"><span class="glyphicon glyphicon-inbox"></span><span class="hidden-xs">&nbspBills</span></a></li>
+        <li><a data-toggle="tab" href="#committees"><span class="glyphicon glyphicon-log-in"></span><span class="hidden-xs">&nbspCommittees</span></a></li>
+        <li><a data-toggle="tab" href="#favorites"><span class="glyphicon glyphicon-star"></span><span class="hidden-xs">&nbspFavorites</span></a></li>
+    </ul>
+    <div class="tab-content col-md-10">
+        <div id="legislators"  class="tab-pane fade in active">
+            <div id="carousel_detail" class="carousel slide white-shadow" data-ride="carousel" data-interval="false">
+                <h2>Legislators</h2>
+                <div class="carousel-inner">
+                    <div class="item area active">
+                        <div class="panel panel-default">
+                            <ul class="nav nav-tabs" id="nav_tabs">
+                                <li class="active"><a data-toggle="tab" href="#bystate">By State</a></li>
+                                <li><a data-toggle="tab" href="#house">House</a></li>
+                                <li><a data-toggle="tab" href="#senate">Senate</a></li>
+                            </ul>
+                            <div class="tab-content">
+                                <div id="bystate" class="tab-pane fade in active">
+                                    <div class="panel-body">
+                                        <div class="container-fluid">
+                                            <div class="panel panel-default">
+                                                <div class="panel-heading">
+                                                    <h3 class="panel-title pull-left">Legislators By State</h3>
+                                                    <div class="dropdown pull-right" id="state_menu">
+                                                        <select ng-model="selectstate">
+                                                            <option value="" selected>All States</option>
+                                                            <option value="Alabama" >Alabama</option>
+                                                            <option value="Alaska" >Alaska</option>
+                                                            <option value="Arizona" >Arizona</option>
+                                                            <option value="Arkansas" >Arkansas</option>
+                                                            <option value="California" >California</option>
+                                                            <option value="Colorado" >Colorado</option>
+                                                            <option value="Connecticut" >Connecticut</option>
+                                                            <option value="Delaware" >Delaware</option>
+                                                            <option value="District Of Columbia" >District Of Columbia</option>
+                                                            <option value="Montana" >Montana</option>
+                                                            <option value="Nebraska" >Nebraska</option>
+                                                            <option value="Nevada" >Nevada</option>
+                                                            <option value="New Hampshire" >New Hampshire</option>
+                                                            <option value="New Jersey" >New Jersey</option>
+                                                            <option value="New Mexico" >New Mexico</option>
+                                                            <option value="New York" >New York</option>
+                                                            <option value="North Carolina" >North Carolina</option>
+                                                            <option value="North Dakota" >North Dakota</option>
+                                                            <option value="Florida" >Florida</option>
+                                                            <option value="Georgia" >Georgia</option>
+                                                            <option value="Hawaii" >Hawaii</option>
+                                                            <option value="Idaho" >Idaho</option>
+                                                            <option value="Illinois" >Illinois</option>
+                                                            <option value="Indiana" >Indiana</option>
+                                                            <option value="Iowa" >Iowa</option>
+                                                            <option value="Kansas" >Kansas</option>
+                                                            <option value="Kentucky" >Kentucky</option>
+                                                            <option value="Louisiana" >Louisiana</option>
+                                                            <option value="Maine" >Maine</option>
+                                                            <option value="Maryland" >Maryland</option>
+                                                            <option value="Massachusetts" >Massachusetts</option>
+                                                            <option value="Michigan" >Michigan</option>
+                                                            <option value="Minnesota" >Minnesota</option>
+                                                            <option value="Mississippi" >Mississippi</option>
+                                                            <option value="Missouri" >Missouri</option>
+                                                            <option value="Ohio" >Ohio</option>
+                                                            <option value="Oklahoma" >Oklahoma</option>
+                                                            <option value="Oregon" >Oregon</option>
+                                                            <option value="Pennsylvania" >Pennsylvania</option>
+                                                            <option value="Rhode Island" >Rhode Island</option>
+                                                            <option value="South Carolina" >South Carolina</option>
+                                                            <option value="South Dakota" >South Dakota</option>
+                                                            <option value="Tennessee" >Tennessee</option>
+                                                            <option value="Texas" >Texas</option>
+                                                            <option value="Utah" >Utah</option>
+                                                            <option value="Vermont" >Vermont</option>
+                                                            <option value="Virginia" >Virginia</option>
+                                                            <option value="Washington" >Washington</option>
+                                                            <option value="West Virginia" >West Virginia</option>
+                                                            <option value="Wisconsin" >Wisconsin</option>
+                                                            <option value="Wyoming" >Wyoming</option>
+
+                                                        </select>
+                                                    </div>
+                                                    <div class="clearfix"></div>
+                                                </div>
+                                                <div class="panel-body table-responsive text-center">
+                                                    <table id='table' class="table table-hover text-left">
+                                                        <tr>
+                                                            <td>Party</td>
+                                                            <td>Name</td>
+                                                            <td>Chamber</td>
+                                                            <td>District</td>
+                                                            <td>State</td>
+                                                            <td></td>
+                                                        </tr>
+                                                        <tr dir-paginate="ele in list | filter:selectstate | orderBy: ['state', 'last_name', 'first_name'] | itemsPerPage: pageSize" pagination-id="bystate">
+                                                            <td ng-if="ele.party=='R'"><img class="img-responsive" src="image/r.png" height="30" width="30"></td>
+                                                            <td ng-if="ele.party=='D'"><img class="img-responsive" src="image/d.png" height="30" width="30"></td>
+                                                            <td ng-if="ele.party!='D' && ele.party!='R'"></td>
+                                                            <td>{{ ele.last_name }}, {{ ele.first_name }}</td>
+                                                            <td ng-if="ele.chamber=='house'"><img class="img-responsive" style='float:left' src="image/h.png" height="30" width="30">&nbspHouse</td>
+                                                            <td ng-if="ele.chamber=='senate'"><img class="img-responsive" style='float:left' src="image/s.svg" height="30" width="30">&nbspSenate</td>
+                                                            <td ng-if="ele.chamber!='house' && ele.chamber!='senate'"></td>
+                                                            <td ng-if="ele.district == null">N.A.</td>
+                                                            <td ng-if="ele.district != null">District&nbsp{{ ele.district }}</td>
+                                                            <td>{{ ele.state_name }}</td>
+                                                            <td><button class='btn btn-primary' ng-click='get_detail_legislator( ele )'>View Detail</button></td>
+                                                        </tr>
+                                                    </table>
+                                                    <div ng-controller="LegislatorsOtherController" class="other-controller">
+                                                        <div class="text-center">
+                                                            <dir-pagination-controls boundary-links="true" on-page-change="pageChangeHandler(newPageNumber)" template-url="dirPagination.tpl.html" pagination-id="bystate"></dir-pagination-controls>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="house" class="tab-pane fade">
+                                    <div class="panel-body">
+                                        <div class="container-fluid">
+                                            <div class="panel panel-default">
+                                                <div class="panel-heading">
+                                                    <h3 class="panel-title pull-left">Legislators By State</h3>
+                                                    <div class="input-group pull-right" id="search_menu">
+                                                        <input ng-model="q" id="search" class="form-control" placeholder="Search">
+                                                    </div>
+                                                    <div class="clearfix"></div>
+                                                </div>
+                                                <div class="panel-body table-responsive text-center">
+                                                    <table id='table_bystate' class="table table-hover text-left">
+                                                        <tr>
+                                                            <td>Party</td>
+                                                            <td>Name</td>
+                                                            <td>Chamber</td>
+                                                            <td>District</td>
+                                                            <td>State</td>
+                                                            <td></td>
+                                                        </tr>
+                                                        <tr dir-paginate="ele in list | filter:q | filter:'house' | orderBy: ['last_name', 'first_name'] | itemsPerPage: pageSize" pagination-id="house">
+                                                            <td ng-if="ele.party=='R'"><img class="img-responsive" src="image/r.png" height="30" width="30"></td>
+                                                            <td ng-if="ele.party=='D'"><img class="img-responsive" src="image/d.png" height="30" width="30"></td>
+                                                            <td ng-if="ele.party!='D' && ele.party!='R'"></td>
+                                                            <td>{{ ele.last_name }}, {{ ele.first_name }}</td>
+                                                            <td ng-if="ele.chamber=='house'"><img class="img-responsive" style='float:left' src="image/h.png" height="30" width="30">&nbspHouse</td>
+                                                            <td ng-if="ele.chamber=='senate'"><img class="img-responsive" style='float:left' src="image/s.svg" height="30" width="30">&nbspSenate</td>
+                                                            <td ng-if="ele.chamber!='house' && ele.chamber!='senate'"></td>
+                                                            <td ng-if="ele.district == null">N.A.</td>
+                                                            <td ng-if="ele.district != null">District&nbsp{{ ele.district }}</td>
+                                                            <td>{{ ele.state_name }}</td>
+                                                            <td><button class='btn btn-primary' ng-click='get_detail_legislator( ele )'>View Detail</button></td>
+                                                        </tr>
+                                                    </table>
+                                                    <div ng-controller="LegislatorsOtherController" class="other-controller">
+                                                        <div class="text-center">
+                                                            <dir-pagination-controls boundary-links="true" on-page-change="pageChangeHandler(newPageNumber)" template-url="dirPagination.tpl.html"pagination-id="house"></dir-pagination-controls>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="senate" class="tab-pane fade">
+                                    <div class="panel-body">
+                                        <div class="container-fluid">
+                                            <div class="panel panel-default">
+                                                <div class="panel-heading">
+                                                    <h3 class="panel-title pull-left">Legislators By State</h3>
+                                                    <div class="input-group pull-right">
+                                                        <input ng-model="q2" id="search_house" class="form-control" placeholder="Search">
+                                                    </div>
+                                                    <div class="clearfix"></div>
+                                                </div>
+                                                <div class="panel-body table-responsive text-center">
+                                                    <table id='table_house' class="table table-hover text-left">
+                                                        <tr>
+                                                            <td>Party</td>
+                                                            <td>Name</td>
+                                                            <td>Chamber</td>
+                                                            <td>District</td>
+                                                            <td>State</td>
+                                                            <td></td>
+                                                        </tr>
+                                                        <tr dir-paginate="ele in list | filter:q2 | filter:'senate' | orderBy: ['last_name', 'first_name'] | itemsPerPage: pageSize" pagination-id="senate">
+                                                            <td ng-if="ele.party=='R'"><img class="img-responsive" src="image/r.png" height="30" width="30"></td>
+                                                            <td ng-if="ele.party=='D'"><img class="img-responsive" src="image/d.png" height="30" width="30"></td>
+                                                            <td ng-if="ele.party!='D' && ele.party!='R'"></td>
+                                                            <td>{{ ele.last_name }}, {{ ele.first_name }}</td>
+                                                            <td ng-if="ele.chamber=='house'"><img class="img-responsive" style='float:left' src="image/h.png" height="30" width="30">&nbspHouse</td>
+                                                            <td ng-if="ele.chamber=='senate'"><img class="img-responsive" style='float:left' src="image/s.svg" height="30" width="30">&nbspSenate</td>
+                                                            <td ng-if="ele.chamber!='house' && ele.chamber!='senate'"></td>
+                                                            <td ng-if="ele.district == null">N.A.</td>
+                                                            <td ng-if="ele.district != null">District&nbsp{{ ele.district }}</td>
+                                                            <td>{{ ele.state_name }}</td>
+                                                            <td><button class='btn btn-primary' ng-click='get_detail_legislator( ele )'>View Detail</button></td>
+                                                        </tr>
+                                                    </table>
+                                                    <div ng-controller="LegislatorsOtherController" class="other-controller">
+                                                        <div class="text-center">
+                                                            <dir-pagination-controls boundary-links="true" on-page-change="pageChangeHandler(newPageNumber)" template-url="dirPagination.tpl.html" pagination-id="senate"></dir-pagination-controls>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="item area">
+                        <div class="panel panel-default" ng-model="legislator_detail">
+                            <div class="page-header">
+                                <button type="button" id="goback_les" class="btn btn-default glyphicon glyphicon-chevron-left" style='float:left'></button>
+                                <h2 style='float:left;'>Details</h2>
+                                <button type="button" class="btn btn-default" ng-click="favorite(legislator_detail)" style='float:right'>
+                                    <span ng-if="!isLegisFavorite(legislator_detail)" class="glyphicon glyphicon-star"></span>
+                                    <span ng-if="isLegisFavorite(legislator_detail)" class="glyphicon glyphicon-star" style="color:yellow; border: 1px"></span>
+                                </button>
+                                <div class="clearfix"></div>
+                            </div>
+                            <div class="panel-body table-responsive text-center">
+                                <div class="col-md-6">
+                                    <div class="col-md-5">
+                                        <img class="img-responsive" src=https://theunitedstates.io/images/congress/225x275/{{legislator_detail.bioguide_id}}.jpg>
+                                    </div>
+                                    <div class="col-md-5">
+                                        <table class="table table-hover text-left">
+                                            <tr>
+                                                <td>{{legislator_detail.title}}. {{legislator_detail.last_name}}, {{legislator_detail.first_name}}</td>
+                                            </tr>
+                                            <tr ng-if="legislator_detail.oc_email != null">
+                                                <td>{{legislator_detail.oc_email}}</td>
+                                            </tr>
+                                            <tr ng-if="legislator_detail.oc_email == null">
+                                                <td>N.A.</td>
+                                            </tr>
+                                            <tr ng-if="legislator_detail.chamber=='house'">
+                                                <td>Chamber: House</td>
+                                            </tr>
+                                            <tr ng-if="legislator_detail.chamber=='senate'">
+                                                <td>Chamber: Senate</td>
+                                            </tr>
+                                            <tr ng-if="legislator_detail.chamber!='house' && legislator_detail.chamber!='senate'">
+                                                <td>Chamber: N.A.</td>
+                                            </tr>
+                                            <tr ng-if="legislator_detail.phone != null">
+                                                <td>Contact: {{legislator_detail.phone}}</td>
+                                            </tr>
+                                            <tr ng-if="legislator_detail.phone == null">
+                                                <td>Contact: N.A.</td>
+                                            </tr>
+                                            <tr ng-if="legislator_detail.party=='R'">
+                                                <td><img class="img-responsive" src="image/r.png" style='float:left' height="30" width="30">&nbspRepublican</td>
+                                            </tr>
+                                            <tr ng-if="legislator_detail.party=='D'">
+                                                <td><img class="img-responsive" src="image/d.png" style='float:left' height="30" width="30">&nbspDemocrat</td>
+                                            </tr>
+                                            <tr ng-if="legislator_detail.party!='R' && legislator_detail.party!='D'">
+                                                <td>Chamber: N.A.</td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                    <table class="table table-hover text-left table-responsive">
+                                        <tr>
+                                            <td>Start Term</td>
+                                            <td>{{legislator_detail.term_start | date:'MMM d, y'}}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>End Term</td>
+                                            <td>{{legislator_detail.term_end | date:'MMM d, y'}}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Term</td>
+                                            <td><uib-progressbar class="progress-bar-green" value="dynamic" animate="false" type="success"><b>{{percent}}%</b></uib-progressbar></td>
+                                        <tr ng-if="legislator_detail.office!=null">
+                                            <td>Office</td>
+                                            <td>{{legislator_detail.office}}</td>
+                                        </tr>
+                                        <tr ng-if="legislator_detail.office==null">
+                                            <td>Office</td>
+                                            <td>N.A.</td>
+                                        </tr>
+                                        <tr ng-if="legislator_detail.fax!=null">
+                                            <td>Fax</td>
+                                            <td>{{legislator_detail.fax}}</td>
+                                        </tr>
+                                        <tr ng-if="legislator_detail.fax==null">
+                                            <td>Fax</td>
+                                            <td>N.A.</td>
+                                        </tr>
+                                        <tr ng-if="legislator_detail.birthday!=null">
+                                            <td>Birthday</td>
+                                            <td>{{legislator_detail.birthday}}</td>
+                                        </tr>
+                                        <tr ng-if="legislator_detail.birthday==null">
+                                            <td>birthday</td>
+                                            <td>N.A.</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Social Link</td>
+                                            <td>
+                                                <a href=http://twitter.com/{{legislator_detail.twitter_id}} target="_blank"><img class="img-responsive" src="image/t.png" style='float:left' height="40" width="40"></a>
+                                                <a href=http://www.facebook.com/{{legislator_detail.facebook_id}} target="_blank"><img class="img-responsive" src="image/f.png" style='float:left' height="40" width="40"></a>
+                                                <a href={{legislator_detail.website}} target="_blank"><img class="img-responsive" src="image/w.png" style='float:left' height="40" width="40"></a>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <h4 class="text-left">Committee</h4>
+                                    <table class="table table-hover text-left">
+                                        <tr>
+                                            <td>Chamber</td>
+                                            <td>ID</td>
+                                            <td class="hidden-xs">Name</td>
+                                        </tr>
+                                        <tr ng-repeat="ele in committees_list">
+                                            <td>{{ele.chamber}}</td>
+                                            <td>{{ele.committee_id}}</td>
+                                            <td class="hidden-xs">{{ele.name}}</td>
+                                        </tr>
+                                    </table>
+                                    <h4 class="text-left">Bills</h4>
+                                    <table class="table table-hover text-left">
+                                        <tr>
+                                            <td>Bill ID</td>
+                                            <td class="hidden-xs">Title</td>
+                                            <td class="hidden-xs">Chamber</td>
+                                            <td class="hidden-xs">Bill Type</td>
+                                            <td class="hidden-xs">Congress</td>
+                                            <td>Link</td>
+                                        </tr>
+                                        <tr ng-repeat="ele in bills_list">
+                                            <td>{{ele.bill_id}}</td>
+                                            <td class="hidden-xs">{{ele.official_title}}</td>
+                                            <td class="hidden-xs">{{ele.chamber}}</td>
+                                            <td class="hidden-xs">{{ele.bill_type}}</td>
+                                            <td class="hidden-xs">{{ele.congress}}</td>
+                                            <td ng-if="ele.last_version.urls.pdf!=null"><a href={{ele.last_version.urls.pdf}} target="_blank">Link</a></td>
+                                            <td ng-if="ele.last_version.urls.pdf==null">N.A.</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="bills" class="tab-pane fade">
+            <div id="carousel_bill" class="carousel slide white-shadow" data-ride="carousel" data-interval="false">
+                <h2>Bills</h2>
+                <div class="carousel-inner">
+                    <div class="item area active">
+                        <div class="panel panel-default">
+                            <ul class="nav nav-tabs">
+                                <li class="active"><a data-toggle="tab" href="#active">Active Bills</a></li>
+                                <li><a data-toggle="tab" href="#new">New</a></li>
+                            </ul>
+                            <div class="tab-content">
+                                <div id="active" class="tab-pane fade in active">
+                                    <div class="panel-body">
+                                        <div class="container-fluid">
+                                            <div class="panel panel-default">
+                                                <div class="panel-heading">
+                                                    <h3 class="panel-title pull-left">Active Bills</h3>
+                                                    <div class="input-group pull-right">
+                                                        <input ng-model="q3" class="form-control" placeholder="Search">
+                                                    </div>
+                                                    <div class="clearfix"></div>
+                                                </div>
+                                                <div class="panel-body table-responsive text-center">
+                                                    <table class="table table-hover text-left">
+                                                        <tr>
+                                                            <td>Bill ID</td>
+                                                            <td>Bill Type</td>
+                                                            <td>Title</td>
+                                                            <td>Chamber</td>
+                                                            <td>Introducted On</td>
+                                                            <td>Sponsor</td>
+                                                            <td></td>
+                                                        </tr>
+                                                        <tr dir-paginate="ele in bills_active_list | filter:q3 | itemsPerPage: pageSize" pagination-id="bills_active">
+                                                            <td>{{ ele.bill_id }}</td>
+                                                            <td ng-if="ele.bill_type!=null">{{ ele.bill_type }}</td>
+                                                            <td ng-if="ele.bill_type==null">N.A.</td>
+                                                            <td ng-if="ele.official_title!=null">{{ ele.official_title }}</td>
+                                                            <td ng-if="ele.official_title==null">N.A.</td>
+                                                            <td ng-if="ele.chamber=='house'"><img class="img-responsive" style='float:left' src="image/h.png" height="30" width="30">&nbspHouse</td>
+                                                            <td ng-if="ele.chamber=='senate'"><img class="img-responsive" style='float:left' src="image/s.svg" height="30" width="30">&nbspSenate</td>
+                                                            <td ng-if="ele.chamber!='house' && ele.chamber!='senate'"></td>
+                                                            <td ng-if="ele.introduced_on!=null">{{ ele.introduced_on }}</td>
+                                                            <td ng-if="ele.introduced_on==null">N.A.</td>
+                                                            <td ng-if="ele.sponsor!=null">{{ ele.sponsor.title }}. {{ ele.sponsor.last_name }}. {{ ele.sponsor.first_name }}</td>
+                                                            <td ng-if="ele.sponsor==null">N.A.</td>
+                                                            <td><button class='btn btn-primary' ng-click='get_detail_bill( ele )'>View Detail</button></td>
+                                                        </tr>
+                                                    </table>
+                                                    <div ng-controller="LegislatorsOtherController" class="other-controller">
+                                                        <div class="text-center">
+                                                            <dir-pagination-controls boundary-links="true" on-page-change="pageChangeHandler(newPageNumber)" template-url="dirPagination.tpl.html" pagination-id="bills_active"></dir-pagination-controls>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="new" class="tab-pane fade">
+                                    <div class="panel-body">
+                                        <div class="container-fluid">
+                                            <div class="panel panel-default">
+                                                <div class="panel-heading">
+                                                    <h3 class="panel-title pull-left">New</h3>
+                                                    <div class="input-group pull-right">
+                                                        <input ng-model="q4" class="form-control" placeholder="Search">
+                                                    </div>
+                                                    <div class="clearfix"></div>
+                                                </div>
+                                                <div class="panel-body table-responsive text-center">
+                                                    <table class="table table-hover text-left">
+                                                        <tr>
+                                                            <td>Bill ID</td>
+                                                            <td>Bill Type</td>
+                                                            <td>Title</td>
+                                                            <td>Chamber</td>
+                                                            <td>Introducted On</td>
+                                                            <td>Sponsor</td>
+                                                            <td></td>
+                                                        </tr>
+                                                        <tr dir-paginate="ele in bills_unactive_list | filter:q4 | itemsPerPage: pageSize" pagination-id="bills_unactive">
+                                                            <td>{{ ele.bill_id }}</td>
+                                                            <td ng-if="ele.bill_type!=null">{{ ele.bill_type }}</td>
+                                                            <td ng-if="ele.bill_type==null">N.A.</td>
+                                                            <td ng-if="ele.official_title!=null">{{ ele.official_title }}</td>
+                                                            <td ng-if="ele.official_title==null">N.A.</td>
+                                                            <td ng-if="ele.chamber=='house'"><img class="img-responsive" style='float:left' src="image/h.png" height="30" width="30">&nbspHouse</td>
+                                                            <td ng-if="ele.chamber=='senate'"><img class="img-responsive" style='float:left' src="image/s.svg" height="30" width="30">&nbspSenate</td>
+                                                            <td ng-if="ele.chamber!='house' && ele.chamber!='senate'"></td>
+                                                            <td ng-if="ele.introduced_on!=null">{{ ele.introduced_on }}</td>
+                                                            <td ng-if="ele.introduced_on==null">N.A.</td>
+                                                            <td ng-if="ele.sponsor!=null">{{ ele.sponsor.title }}. {{ ele.sponsor.last_name }}. {{ ele.sponsor.first_name }}</td>
+                                                            <td ng-if="ele.sponsor==null">N.A.</td>
+                                                            <td><button class='btn btn-primary' ng-click='get_detail_bill( ele )'>View Detail</button></td>
+                                                        </tr>
+                                                    </table>
+                                                    <div ng-controller="LegislatorsOtherController" class="other-controller">
+                                                        <div class="text-center">
+                                                            <dir-pagination-controls boundary-links="true" on-page-change="pageChangeHandler(newPageNumber)" template-url="dirPagination.tpl.html" pagination-id="bills_unactive"></dir-pagination-controls>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="item area">
+                        <div class="panel panel-default">
+                            <div class="page-header">
+                                <button type="button" id="goback_bill" class="btn btn-default glyphicon glyphicon-chevron-left" style='float:left'></button>
+                                <h2 style='float:left;'>Details</h2>
+                                <button type="button" class="btn btn-default" ng-click="favorite_bill(bill_detail)" style='float:right'>
+                                    <span ng-if="!isBillFavorite(bill_detail)" class="glyphicon glyphicon-star"></span>
+                                    <span ng-if="isBillFavorite(bill_detail)" class="glyphicon glyphicon-star" style="color:yellow; border: 1px"></span>
+                                </button>
+                                <div class="clearfix"></div>
+                            </div>
+                            <div class="panel-body table-responsive text-center" ng-model="bill_detail">
+                                <div class="col-md-6">
+                                    <table class="table table-hover text-left">
+                                        <tr>
+                                            <td>Bill ID</td>
+                                            <td>{{bill_detail.bill_id}}</td>
+                                        </tr>
+                                        <tr ng-if="bill_detail.official_title != null">
+                                            <td>Title</td>
+                                            <td>{{bill_detail.official_title}}</td>
+                                        </tr>
+                                        <tr ng-if="bill_detail.official_title == null">
+                                            <td>Title</td>
+                                            <td>N.A.</td>
+                                        </tr>
+                                        <tr ng-if="bill_detail.bill_type != null">
+                                            <td>Bill Type</td>
+                                            <td>{{bill_detail.bill_type}}</td>
+                                        </tr>
+                                        <tr ng-if="bill_detail.bill_type == null">
+                                            <td>Bill Type</td>
+                                            <td>N.A.</td>
+                                        </tr>
+                                        <tr ng-if="bill_detail.sponsor != null">
+                                            <td>Sponsor</td>
+                                            <td>{{bill_detail.sponsor.title}}. {{bill_detail.sponsor.last_name}}, {{bill_detail.sponsor.first_name}}</td>
+                                        </tr>
+                                        <tr ng-if="bill_detail.bill_type == null">
+                                            <td>Sponsor</td>
+                                            <td>N.A.</td>
+                                        </tr>
+                                        <tr ng-if="bill_detail.chamber == null">
+                                            <td>Chamber</td>
+                                            <td>N.A.</td>
+                                        </tr>
+                                        <tr ng-if="bill_detail.chamber=='house'">
+                                            <td>Chamber</td>
+                                            <td>House</td>
+                                        </tr>
+                                        <tr ng-if="bill_detail.chamber=='senate'">
+                                            <td>Chamber</td>
+                                            <td>Senate</td>
+                                        </tr>
+                                        <tr ng-if="bill_detail.history.active == 'false'">
+                                            <td>Status</td>
+                                            <td>New</td>
+                                        </tr>
+                                        <tr ng-if="bill_detail.history.active == 'true'">
+                                            <td>Status</td>
+                                            <td>Active</td>
+                                        </tr>
+                                        <tr ng-if="bill_detail.introduced_on != null">
+                                            <td>Introduced On</td>
+                                            <td>{{bill_detail.introduced_on}}</td>
+                                        </tr>
+                                        <tr ng-if="bill_detail.introduced_on == null">
+                                            <td>Introduced On</td>
+                                            <td>N.A.</td>
+                                        </tr>
+                                        <tr ng-if="bill_detail.introduced_on != null">
+                                            <td>Introduced On</td>
+                                            <td>{{bill_detail.introduced_on}}</td>
+                                        </tr>
+                                        <tr ng-if="bill_detail.introduced_on == null">
+                                            <td>Introduced On</td>
+                                            <td>N.A.</td>
+                                        </tr>
+                                        <tr ng-if="bill_detail.urls.congress != null">
+                                            <td>Congress URL</td>
+                                            <td><a href={{bill_detail.urls.congress}} target="_blank">URL</a></td>
+                                        </tr>
+                                        <tr ng-if="bill_detail.urls.congress == null">
+                                            <td>Congress URL</td>
+                                            <td>N.A.</td>
+                                        </tr>
+                                        <tr ng-if="bill_detail.last_version.version_name != null">
+                                            <td>Version Status</td>
+                                            <td>{{bill_detail.last_version.version_name}}</td>
+                                        </tr>
+                                        <tr ng-if="bill_detail.last_version.version_name == null">
+                                            <td>Version Status</td>
+                                            <td>N.A.</td>
+                                        </tr>
+                                        <tr ng-if="bill_detail.last_version.urls.pdf != null">
+                                            <td>Bill URL</td>
+                                            <td><a href={{bill_detail.last_version.urls.pdf}} target="_blank">Link</a></td>
+                                        </tr>
+                                        <tr ng-if="bill_detail.last_version.urls.pdf == null">
+                                            <td>Bill URL</td>
+                                            <td>N.A.</td>
+                                        </tr>
+
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="hidden-xs" ng-if="bill_detail.last_version.urls.pdf != null">
+                                        <object ng-attr-data="{{bill_detail.last_version.urls.pdf}}" type="application/pdf" width="100%" height="500px"></object>
+                                    </div>
+                                    <div class="hidden-xs" ng-if="bill_detail.last_version.urls.pdf == null">
+                                        N.A.
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="committees" class="tab-pane fade">
+            <h2>Committees</h2>
+            <div class="panel panel-default">
+                <ul class="nav nav-tabs">
+                    <li class="active"><a data-toggle="tab" href="#comm_house">House</a></li>
+                    <li><a data-toggle="tab" href="#comm_senate">Senate</a></li>
+                    <li><a data-toggle="tab" href="#comm_joint">Joint</a></li>
+                </ul>
+                <div class="tab-content">
+                    <div id="comm_house" class="tab-pane fade in active">
+                        <div class="panel-body">
+                            <div class="container-fluid">
+                                <div class="panel panel-default">
+                                    <div class="panel-heading">
+                                        <h3 class="panel-title pull-left">House</h3>
+                                        <div class="input-group pull-right">
+                                            <input ng-model="q5" class="form-control" placeholder="Search">
+                                        </div>
+                                        <div class="clearfix"></div>
+                                    </div>
+                                    <div class="panel-body table-responsive text-center">
+                                        <table class="table table-hover text-left">
+                                            <tr>
+                                                <td></td>
+                                                <td>Chamber</td>
+                                                <td>Committee ID</td>
+                                                <td>Name</td>
+                                                <td>Parent Committee</td>
+                                                <td>Contact</td>
+                                                <td>Office</td>
+                                            </tr>
+                                            <tr dir-paginate="ele in comm_house_list | filter:q5 | itemsPerPage: pageSize" pagination-id="comm_house">
+                                                <td>
+                                                    <button type="button" class="btn btn-default" ng-click="favorite_comm(ele)" style='float:right'>
+                                                        <span ng-if="!isCommFavorite(ele)" class="glyphicon glyphicon-star"></span>
+                                                        <span ng-if="isCommFavorite(ele)" class="glyphicon glyphicon-star" style="color:yellow; border: 1px"></span>
+                                                    </button>
+                                                </td>
+                                                <td ng-if="ele.chamber=='house'"><img class="img-responsive" style='float:left' src="image/h.png" height="30" width="30">&nbspHouse</td>
+                                                <td ng-if="ele.chamber=='senate'"><img class="img-responsive" style='float:left' src="image/s.svg" height="30" width="30">&nbspSenate</td>
+                                                <td ng-if="ele.chamber!='house' && ele.chamber!='senate'"></td>
+                                                <td >{{ ele.committee_id }}</td>
+                                                <td ng-if="ele.name!=null">{{ ele.name }}</td>
+                                                <td ng-if="ele.name==null">N.A.</td>
+                                                <td ng-if="ele.parent_committee_id!=null">{{ ele.parent_committee_id }}</td>
+                                                <td ng-if="ele.parent_committee_id==null">N.A.</td>
+                                                <td ng-if="ele.phone!=null">{{ ele.phone }}</td>
+                                                <td ng-if="ele.phone==null">N.A.</td>
+                                                <td ng-if="ele.office!=null">{{ ele.office }}</td>
+                                                <td ng-if="ele.office==null">N.A.</td>
+                                            </tr>
+                                        </table>
+                                        <div ng-controller="LegislatorsOtherController" class="other-controller">
+                                            <div class="text-center">
+                                                <dir-pagination-controls boundary-links="true" on-page-change="pageChangeHandler(newPageNumber)" template-url="dirPagination.tpl.html" pagination-id="comm_house"></dir-pagination-controls>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="comm_senate" class="tab-pane fade">
+                        <div class="panel-body">
+                            <div class="container-fluid">
+                                <div class="panel panel-default">
+                                    <div class="panel-heading">
+                                        <h3 class="panel-title pull-left">Senate</h3>
+                                        <div class="input-group pull-right">
+                                            <input ng-model="q6" class="form-control" placeholder="Search">
+                                        </div>
+                                        <div class="clearfix"></div>
+                                    </div>
+                                    <div class="panel-body table-responsive text-center">
+                                        <table class="table table-hover text-left">
+                                            <tr>
+                                                <td></td>
+                                                <td>Chamber</td>
+                                                <td>Committee ID</td>
+                                                <td>Name</td>
+                                                <td>Parent Committee</td>
+                                                <td>Contact</td>
+                                                <td>Office</td>
+                                            </tr>
+                                            <tr dir-paginate="ele in comm_senate_list | filter:q6 | itemsPerPage: pageSize" pagination-id="comm_senate">
+                                                <td>
+                                                    <button type="button" class="btn btn-default" ng-click="favorite_comm(ele)" style='float:right'>
+                                                        <span ng-if="!isCommFavorite(ele)" class="glyphicon glyphicon-star"></span>
+                                                        <span ng-if="isCommFavorite(ele)" class="glyphicon glyphicon-star" style="color:yellow; border: 1px"></span>
+                                                    </button>
+                                                </td>
+                                                <td ng-if="ele.chamber=='house'"><img class="img-responsive" style='float:left' src="image/h.png" height="30" width="30">&nbspHouse</td>
+                                                <td ng-if="ele.chamber=='senate'"><img class="img-responsive" style='float:left' src="image/s.svg" height="30" width="30">&nbspSenate</td>
+                                                <td ng-if="ele.chamber!='house' && ele.chamber!='senate'"></td>
+                                                <td >{{ ele.committee_id }}</td>
+                                                <td ng-if="ele.name!=null">{{ ele.name }}</td>
+                                                <td ng-if="ele.name==null">N.A.</td>
+                                                <td ng-if="ele.parent_committee_id!=null">{{ ele.parent_committee_id }}</td>
+                                                <td ng-if="ele.parent_committee_id==null">N.A.</td>
+                                                <td ng-if="ele.phone!=null">{{ ele.phone }}</td>
+                                                <td ng-if="ele.phone==null">N.A.</td>
+                                                <td ng-if="ele.office!=null">{{ ele.office }}</td>
+                                                <td ng-if="ele.office==null">N.A.</td>
+                                            </tr>
+                                        </table>
+                                        <div ng-controller="LegislatorsOtherController" class="other-controller">
+                                            <div class="text-center">
+                                                <dir-pagination-controls boundary-links="true" on-page-change="pageChangeHandler(newPageNumber)" template-url="dirPagination.tpl.html" pagination-id="comm_senate"></dir-pagination-controls>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="comm_joint" class="tab-pane fade">
+                        <div class="panel-body">
+                            <div class="container-fluid">
+                                <div class="panel panel-default">
+                                    <div class="panel-heading">
+                                        <h3 class="panel-title pull-left">Joint</h3>
+                                        <div class="input-group pull-right">
+                                            <input ng-model="q7" class="form-control" placeholder="Search">
+                                        </div>
+                                        <div class="clearfix"></div>
+                                    </div>
+                                    <div class="panel-body table-responsive text-center">
+                                        <table class="table table-hover text-left">
+                                            <tr>
+                                                <td></td>
+                                                <td>Chamber</td>
+                                                <td>Committee ID</td>
+                                                <td>Name</td>
+                                            </tr>
+                                            <tr dir-paginate="ele in comm_joint_list | filter:q7 | itemsPerPage: pageSize" pagination-id="comm_joint">
+                                                <td>
+                                                    <button type="button" class="btn btn-default" ng-click="favorite_comm(ele)" style='float:right'>
+                                                        <span ng-if="!isCommFavorite(ele)" class="glyphicon glyphicon-star"></span>
+                                                        <span ng-if="isCommFavorite(ele)" class="glyphicon glyphicon-star" style="color:yellow; border: 1px"></span>
+                                                    </button>
+                                                </td>
+                                                <td ng-if="ele.chamber=='house'"><img class="img-responsive" style='float:left' src="image/h.png" height="30" width="30">&nbspHouse</td>
+                                                <td ng-if="ele.chamber=='senate'"><img class="img-responsive" style='float:left' src="image/s.svg" height="30" width="30">&nbspSenate</td>
+                                                <td ng-if="ele.chamber=='joint'"><img class="img-responsive" style='float:left'>Joint</td>
+                                                <td >{{ ele.committee_id }}</td>
+                                                <td ng-if="ele.name!=null">{{ ele.name }}</td>
+                                                <td ng-if="ele.name==null">N.A.</td>
+                                            </tr>
+                                        </table>
+                                        <div ng-controller="LegislatorsOtherController" class="other-controller">
+                                            <div class="text-center">
+                                                <dir-pagination-controls boundary-links="true" on-page-change="pageChangeHandler(newPageNumber)" template-url="dirPagination.tpl.html" pagination-id="comm_joint"></dir-pagination-controls>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="favorites" class="tab-pane fade" >
+            <h2>Favorites</h2>
+            <div class="panel panel-default">
+                <ul class="nav nav-tabs">
+                    <li class="active"><a data-toggle="tab" href="#favor_legis">Legislators</a></li>
+                    <li><a data-toggle="tab" href="#favor_bill">Bills</a></li>
+                    <li><a data-toggle="tab" href="#favor_comm">Committees</a></li>
+                </ul>
+                <div class="tab-content">
+                    <div id="favor_legis" class="tab-pane fade in active">
+                        <div class="panel-body">
+                            <div class="container-fluid">
+                                <div class="panel panel-default">
+                                    <div class="panel-heading">
+                                        <h3 class="panel-title pull-left">Favorite Legislators</h3>
+                                        <div class="clearfix"></div>
+                                    </div>
+                                    <div class="panel-body table-responsive text-center">
+                                        <table class="table table-hover text-left">
+                                            <tr>
+                                                <td></td>
+                                                <td>Image</td>
+                                                <td>Party</td>
+                                                <td>Name</td>
+                                                <td>Chamber</td>
+                                                <td>State</td>
+                                                <td>Email</td>
+                                                <td></td>
+                                            </tr>
+                                            <tr ng-repeat="ele in local_legis">
+                                                <td><button class='btn btn-default glyphicon glyphicon-trash' ng-click='remove_legis( ele )'></button></td>
+                                                <td><img class="img-responsive" height="30" width="30" src=https://theunitedstates.io/images/congress/225x275/{{ele.bioguide_id}}.jpg></td>
+                                                <td ng-if="ele.party=='R'"><img class="img-responsive" src="image/r.png" height="30" width="30"></td>
+                                                <td ng-if="ele.party=='D'"><img class="img-responsive" src="image/d.png" height="30" width="30"></td>
+                                                <td ng-if="ele.party!='D' && ele.party!='R'"></td>
+                                                <td>{{ ele.title }}. {{ ele.last_name }}, {{ ele.first_name }}</td>
+                                                <td ng-if="ele.chamber=='house'"><img class="img-responsive" style='float:left' src="image/h.png" height="30" width="30">&nbspHouse</td>
+                                                <td ng-if="ele.chamber=='senate'"><img class="img-responsive" style='float:left' src="image/s.svg" height="30" width="30">&nbspSenate</td>
+                                                <td ng-if="ele.chamber!='house' && ele.chamber!='senate'"></td>
+                                                <td>{{ ele.state_name }}</td>
+                                                <td ng-if="ele.oc_email!=null">{{ ele.oc_email }}</td>
+                                                <td ng-if="ele.oc_email==null">N.A.</td>
+                                                <td><button class='btn btn-primary' ng-click='get_detail_legislator( ele )'>View Detail</button></td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="favor_bill" class="tab-pane fade">
+                        <div class="panel-body">
+                            <div class="container-fluid">
+                                <div class="panel panel-default">
+                                    <div class="panel-heading">
+                                        <h3 class="panel-title pull-left">Favorite Bills</h3>
+                                        <div class="clearfix"></div>
+                                    </div>
+                                    <div class="panel-body table-responsive text-center">
+                                        <table class="table table-hover text-left">
+                                            <tr>
+                                                <td></td>
+                                                <td>Bill ID</td>
+                                                <td>Bill Type</td>
+                                                <td>Chamber</td>
+                                                <td>Introduced On</td>
+                                                <td>Sponsor</td>
+                                                <td></td>
+                                            </tr>
+                                            <tr ng-repeat="ele in local_bill">
+                                                <td><button class='btn btn-default glyphicon glyphicon-trash' ng-click='remove_bill( ele )'></button></td>
+                                                <td>{{ele.bill_id}}</td>
+                                                <td ng-if="ele.bill_type != null">{{bill_detail.bill_type}}</td>
+                                                <td ng-if="ele.bill_type == null">N.A.</td>
+                                                <td ng-if="ele.official_title!=null">{{ ele.official_title }}</td>
+                                                <td ng-if="ele.official_title==null">N.A.</td>
+                                                <td ng-if="ele.chamber=='house'"><img class="img-responsive" style='float:left' src="image/h.png" height="30" width="30">&nbspHouse</td>
+                                                <td ng-if="ele.chamber=='senate'"><img class="img-responsive" style='float:left' src="image/s.svg" height="30" width="30">&nbspSenate</td>
+                                                <td ng-if="ele.chamber!='house' && ele.chamber!='senate'"></td>
+                                                <td ng-if="ele.introduced_on!=null">{{ ele.introduced_on }}</td>
+                                                <td ng-if="ele.introduced_on==null">N.A.</td>
+                                                <td ng-if="ele.sponsor!=null">{{ ele.sponsor.title }}. {{ ele.sponsor.last_name }}. {{ ele.sponsor.first_name }}</td>
+                                                <td ng-if="ele.sponsor==null">N.A.</td>
+                                                <td><button class='btn btn-primary' ng-click='get_detail_bill( ele )'>View Detail</button></td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="favor_comm" class="tab-pane fade">
+                        <div class="panel-body">
+                            <div class="container-fluid">
+                                <div class="panel panel-default">
+                                    <div class="panel-heading">
+                                        <h3 class="panel-title pull-left">Favorite Committees</h3>
+                                        <div class="clearfix"></div>
+                                    </div>
+                                    <div class="panel-body table-responsive text-center">
+                                        <table class="table table-hover text-left">
+                                            <tr>
+                                                <td></td>
+                                                <td>Chamber</td>
+                                                <td>Committee ID</td>
+                                                <td>Name</td>
+                                                <td>Parent Committee</td>
+                                                <td>Sub Committee</td>
+                                            </tr>
+                                            <tr ng-repeat="ele in local_comm">
+                                                <td><button class='btn btn-default glyphicon glyphicon-trash' ng-click='remove_comm( ele )'></button></td>
+                                                <td ng-if="ele.chamber=='house'"><img class="img-responsive" style='float:left' src="image/h.png" height="30" width="30">&nbspHouse</td>
+                                                <td ng-if="ele.chamber=='senate'"><img class="img-responsive" style='float:left' src="image/s.svg" height="30" width="30">&nbspSenate</td>
+                                                <td ng-if="ele.chamber=='joint'"><img class="img-responsive" style='float:left'>Joint</td>
+                                                <td >{{ ele.committee_id }}</td>
+                                                <td ng-if="ele.name!=null">{{ ele.name }}</td>
+                                                <td ng-if="ele.name==null">N.A.</td>
+                                                <td ng-if="ele.parent_committee_id!=null">{{ ele.parent_committee_id }}</td>
+                                                <td ng-if="ele.parent_committee_id==null">N.A.</td>
+                                                <td ng-if="ele.subcommittee==true">true</td>
+                                                <td ng-if="ele.subcommittee==false">false</td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+
+<script>
+    main();
+</script>
+</body>
+
+
+</html>

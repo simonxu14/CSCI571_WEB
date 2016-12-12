@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Homework 4</title>
+<script>
+function viewXML(what) {
+    var URL = what.URL.value;
+    try {
+        if (URL == "") {
+            throw "empty";
+        }
+        else {
+            xmlDoc = loadXML(URL);
+            if (xmlDoc == null) {
+                hWin = window.alert(URL + " is Not Found");
+            }
+            if (window.ActiveXObject) {
+                if (xmlDoc.parseError.errorCode != 0) {
+                    hWin = hWin = window.alert("Error in XML file");
+                }
+                else if(xmlDoc.getElementsByTagName("Row").length == 0) {
+                    hWin = window.alert("Not Contain Company Entries");
+                }
+                else {
+                    generateHTML(xmlDoc);
+                    hWin = window.open("", "Assignment4", "height=800, width=1000, scrollbars=yes");
+                    hWin.document.write(html_text);
+                }
+            }
+            else {
+                if (xmlDoc.activeElement && xmlDoc.activeElement.nodeName == "parsererror") {
+                    hWin = window.alert("Error in XML file");
+                }
+                else if(xmlDoc.getElementsByTagName("Row").length == 0) {
+                    hWin = window.alert("Not Contain Company Entries");
+                }
+                else {
+                    xmlDoc.onload = generateHTML(xmlDoc);
+                    hWin = window.open("", "Assignment4", "height=800, width=1000, scrollbars=yes");
+                    hWin.document.write(html_text);
+                }
+            }
+            hWin.document.close();
+        }
+    }
+    catch(err) {
+         if(err == "empty") {
+             window.alert("Input is None");
+         }
+     }
+}
+
+function loadXML(url) {
+    if (window.XMLHttpRequest) {
+        xmlhttp = new XMLHttpRequest();
+    }
+    else {
+        xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+    }
+    xmlhttp.open("GET", url, false);
+    xmlhttp.send();
+    xmlDoc = xmlhttp.responseXML;
+    return xmlDoc;
+}
+    
+function generateHTML(xmlDoc) {
+    ELEMENT_NODE = 1;
+    root = xmlDoc.documentElement;
+    html_text = "<html><head><title>XML Parse Result</title></head><body>"
+    html_text += "<table border='2'>"
+    
+    headers = xmlDoc.getElementsByTagName("Data");
+    html_text += "<tbody>";
+    html_text += "<tr>";
+    
+    for (i=0; i<headers.length; i++) {
+        header = headers.item(i).firstChild.nodeValue;
+        html_text += "<th>" + header + "</th>";
+    }
+    html_text += "</tr>";
+    
+    news = xmlDoc.getElementsByTagName("Row");
+    
+    for(i = 0; i < news.length; i++) {
+        newNodeList = news.item(i).childNodes;
+        html_text += "<tr>";
+        for (j = 0; j < newNodeList.length; j++) {
+            if (newNodeList.item(j).nodeType == ELEMENT_NODE) {
+                if (newNodeList.item(j).nodeName == "Location") {
+                    if (newNodeList.item(j).firstChild == null) {
+                        html_text += "<td>N.A.</td>";
+                    }
+                    else {
+                        cityorstateList = newNodeList.item(j).childNodes;
+                        html_text += "<td>";
+                        html_text += "<ul>";
+                        for ( k = 0; k < cityorstateList.length; k++) {
+                            if (cityorstateList.item(k).nodeType == ELEMENT_NODE) {
+                                if (cityorstateList.item(k).firstChild == null) {
+                                    continue;
+                                }
+                                else {
+                                    html_text += "<li>" +  cityorstateList.item(k).firstChild.nodeValue + "</li>";
+                                }
+                            }
+                        }
+                        html_text += "</ul>";
+                        html_text += "</td>";
+                    }
+                }
+                else if (newNodeList.item(j).nodeName == "Logo") {
+                    if (newNodeList.item(j).firstChild == null) {
+                        html_text += "<td>N.A.</td>";
+                    }
+                    else {
+                        html_text += "<td><img src='" +  newNodeList.item(j).firstChild.nodeValue + "' width='300px'  height='150px''></td>"; 
+                    }
+                }
+                else if (newNodeList.item(j).nodeName == "HomePage") {
+                    if (newNodeList.item(j).firstChild == null) {
+                        html_text += "<td>N.A.</td>";
+                    }
+                    else {
+                        html_text += "<td>" + "<a href='" + newNodeList.item(j).firstChild.nodeValue + "'>" +  newNodeList.item(j).firstChild.nodeValue + "</a></td>"
+                    }
+                }
+                else {
+                    if (newNodeList.item(j).firstChild == null) {
+                        html_text += "<td>N.A.</td>";
+                    }
+                    else {
+                        html_text += "<td>" + newNodeList.item(j).firstChild.nodeValue + "</td>";
+                    }
+                }
+            }
+        }
+        html_text += "</tr>";
+    }
+    html_text += "</tbody>";
+    html_text += "</table>";
+    html_text += "</body></html>"
+}
+    
+function check_na(node) {
+    return node == null;
+}
+    
+function print_na() {
+    html_text += "N.A.";
+}
+    
+</script>    
+</head>
+    
+    
+<body>
+<div align="center" style="margin-top:100px;">
+    <p><b>Enter URL for Newspaper List XML File</b></p>
+    <form name="myform" method="POST" id="list">
+        <input type="text" name="URL"/>
+        <br>
+        <br>
+        <input type="button" name="submit" value="SubmitQuery" onClick="viewXML(this.form)" />
+    </form>
+</div>
+</body>

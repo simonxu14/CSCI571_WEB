@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">HW9</string>
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="openDrawer">open_drawer</string>
+    <string name="closeDrawer">close_drawer</string>
+
+    <string name="nav_legislator">Legislators</string>
+    <string name="nav_bill">Bills</string>
+    <string name="nav_committee">Committees</string>
+    <string name="nav_favorite">Favorites</string>
+    <string name="nav_about_us">About Me</string>
+
+    <string-array name="nav_item_activity_titles">
+        <item>Legislators</item>
+        <item>Bills</item>
+        <item>Committees</item>
+        <item>Favorites</item>
+    </string-array>
+</resources>
